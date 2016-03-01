@@ -1,0 +1,110 @@
+<html>
+<head>
+	<link href='http://fonts.googleapis.com/css?family=Open+Sans' rel='stylesheet' type='text/css'>
+<!-- Load the d3 library. -->
+<script src="http://d3js.org/d3.v3.min.js" charset="utf-8"></script>
+<script src="http://d3js.org/topojson.v1.min.js"></script>
+<style>
+/* put a border around the svg element so we can see the coordinate system better. */
+body { font-family: "Open Sans"; } div { margin: 30px; }
+svg { background-color: #f0f0f0;}
+</style>
+<title>Project 1 Marriage</title>
+</head>
+<body>
+
+<h3>Project 1 Marriage</h3>
+
+<div>Data from <a href="http://www.census.gov/hhes/socdemo/marriage/data/census/index.html">The United States Decennial Census</a>.</div>
+
+<!-- The SVG element will go in here -->
+<div id="map"></div>
+
+<script>
+
+var width = 960,
+    height = 625;
+
+var projection = d3.geo.albersUsa();
+
+var path = d3.geo.path().projection(projection);
+	
+var svg = d3.select("#map").append("svg")
+    .attr("width", width)
+    .attr("height", height);
+var counties, states;
+
+var usdaAtlas;
+
+var digitScale = d3.scale.category10()
+//i like scale.pow() for married15 with down there married15/2
+var mar15Scale = d3.scale.linear().domain([6, 14, 22]).range(["#d8b365", "#f5f5f5", "#5ab4ac"]);
+
+var mar25Scale = d3.scale.linear().domain([42, 56, 70]).range(["#d8b365", "#f5f5f5", "#5ab4ac"]);
+
+var mar35Scale = d3.scale.linear().domain([42, 56, 70]).range(["#d8b365", "#f5f5f5", "#5ab4ac"]);
+
+
+d3.json("us.json", function(error, shapes) {
+	states = topojson.feature(shapes, shapes.objects.states).features;
+	//console.log(states);
+	
+	// This is an important d3 idiom. Previously we were creating SVG
+	//  elements, then binding data objects to those SVG elements.
+	// But we can also add data objects BEFORE creating the SVG elements
+	//  using the .enter() selection. This will reuse any existing 
+	//  elements, and allow us to add any new ones that we need.
+	
+	
+	var statePaths = svg.append("g");
+	statePaths.selectAll("path").data(states).enter()
+	.append("path")
+	.attr("d", path)
+	.style("fill", "none").style("stroke", "#000")
+	.attr("id", function(state) {
+			return "s" + state.id;
+		});
+	
+	d3.csv("marriageByAgeSmallData.csv", function (error, rows) {
+		
+		if (error) {console.log(error);}
+		
+		usdaAtlas = d3.map(rows, function (state) { return state.id; });
+		//console.log(rows[0]);
+		
+		statePaths.selectAll("path")
+		.style("fill", function(state) {
+			//console.log(state.id);
+			var stateData = usdaAtlas.get(state.id);
+			
+			//console.log(stateData.Protestant);
+			
+			if (!stateData) {
+				return "#222aaa";
+			}
+			console.log(stateData.married25);
+			console.log(mar25Scale(stateData.married25));
+			
+			//there are several religions that can be used here:
+			/*here you put the catagory and then the begining age for the percentage of the people in that catagory
+			 *name	popTotal	pop15	married15	wds15	never15	pop25	married25	 wds25	never25	pop35	married35	wds35	never35	pop60	married60	w60	divorced60	never60
+			popTotal/1000000 works well for total population*/
+			
+			//return mar15Scale(stateData.married15*0.3);
+			
+			return mar25Scale(stateData.married25); 
+			
+			//return mar25Scale(stateData.married35);
+			
+			//return mar15Scale(stateData.married60*0.1);
+		
+		});
+	});
+});
+
+svg.append("text").attr("y", 600).attr("x", 480).text("Marriage by Age").style("font-size", 38);
+
+</script>
+
+</body>
+</html>
