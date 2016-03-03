@@ -1,0 +1,270 @@
+<html>
+<head>
+	<link href='http://fonts.googleapis.com/css?family=Open+Sans' rel='stylesheet' type='text/css'>
+<!-- Load the d3 library. -->
+<script src="http://d3js.org/d3.v3.min.js" charset="utf-8"></script>
+<script src="http://d3js.org/topojson.v1.min.js"></script>
+<style>
+/* put a border around the svg element so we can see the coordinate system better. */
+body { font-family: "Open Sans"; } div { margin: 30px; }
+svg { background-color: #f0f0f0;}
+</style>
+<title>Project 1 Religion</title>
+</head>
+<body>
+
+<h3>Project 1 Religion</h3>
+
+<div>Data from <a href="http://www.census.gov/hhes/socdemo/marriage/data/census/index.html">The United States Decennial Census</a>.
+<p>Hi Beatrice. So what i did was put the colors to blue and yellow. Blue is Mormon, yellow is married young. So the purple is an overlap of the two. As you can see there are 3 maps. The blue one is just showing the mormon population percentage in the states, the yellow one just the states with high young (15-24) married population. finally the last one puts them ontop of each other. I hope you like it! feel free to change whatever you think is necessary. I tried the protestant one but it didnt look as good because there was too much color in the south.</p></div>
+
+<div id="separate"></div>
+<div id="map"></div>
+
+<script>
+
+var width = 960,
+    height = 625;
+
+var projection = d3.geo.albersUsa();
+//.scale(600)
+//.translate([255,190]);
+
+var path = d3.geo.path().projection(projection);
+	
+var svg = d3.select("#map").append("svg")
+    .attr("width", width)
+    .attr("height", height);
+
+var counties, states;
+
+var usdaAtlas;
+
+var digitScale = d3.scale.category10();
+
+//old scales for multi colored blue to yellow 
+//var protestantScale = d3.scale.linear().domain([0, 0.45, 0.9]).range(["#d8b365", "#f5f5f5", "#5ab4ac"]);
+//var mormonScale = d3.scale.linear().domain([-0.2, 0.02, 0.4]).range(["#d8b365", "#f5f5f5", "#5ab4ac"]);
+//var rcScale = d3.scale.linear().domain([0, 0.2, 0.4]).range(["#d8b365", "#f5f5f5", "#5ab4ac"]);
+
+//set up scales. blue for mormon yellow for married young. I am not sure this works
+var mormonScale = d3.scale.linear().domain([-.02, 0.2, 0.35]).range(["#fff", "#000cff"]);
+
+var mar15Scale = d3.scale.linear().domain([7, 18, 22]).range(["#fff","#ffff99", "#ffd119"]);
+
+d3.json("us.json", function(error, shapes) {
+	states = topojson.feature(shapes, shapes.objects.states).features;
+	//console.log(states);
+	
+	var marriedPaths = svg.append("g").attr("id", "g1");
+	marriedPaths.selectAll("path").data(states).enter()
+	.append("path")
+	.attr("d", path)
+	.style("fill", "none").style("stroke", "#000").style("opacity", 1)
+	.attr("id", function(state) {
+			return "s" + state.id;
+		});
+	
+	d3.csv("data.csv", function (error, rows) {
+		
+		if (error) {console.log(error);}
+		
+		usdaAtlas = d3.map(rows, function (state) { return state.id; });
+		//console.log(rows[0]);
+		
+		marriedPaths.selectAll("path")
+		.style("fill", function(state) {
+			//console.log(state.id);
+			var stateData = usdaAtlas.get(state.id);
+			
+			//console.log(stateData.Protestant);
+			
+			if (!stateData) {
+				return "#222aaa";
+			}
+			//console.log(stateData.married15);
+			
+			return mar15Scale(stateData.married15);
+		});
+	});
+	
+	//for the religion part
+	var statePaths = svg.append("g");
+	
+	statePaths.selectAll("path").data(states).enter()
+	.append("path")
+	.attr("d", path)
+	.style("fill", "none").style("stroke", "#000").style("opacity", 0.6)
+	.attr("id", function(state) {
+			return "s" + state.id;
+		});
+	
+	d3.csv("data.csv", function (error, rows) {
+		
+		if (error) {console.log(error);}
+		
+		usdaAtlas = d3.map(rows, function (state) { return state.id; });
+		//console.log(rows[0]);
+		
+		statePaths.selectAll("path")
+		.style("fill", function(state) {
+			//console.log(state.id);
+			var stateData = usdaAtlas.get(state.id);
+			
+			//console.log(stateData.Protestant);
+			
+			if (!stateData) {
+				return "#222aaa";
+			}
+			//console.log(stateData.Mormon);
+			
+			//there are several religions that can be used here:
+			/*Hindu, Buddhist, Christian, Orthodox, Mormon, Muslim, Jewish, RomanCatholic, Protestant, Atheist, (Nothing in particular + Agnostic = AgNot)*/
+			
+			return mormonScale(stateData.Mormon);
+		});
+	});
+});
+
+//set up the color key
+var gradient = svg.append("defs").append("linearGradient").attr("id", "grad");
+gradient.append("stop").attr("offset", "0%").attr("stop-color", "#000cff");
+gradient.append("stop").attr("offset", "100%").attr("stop-color", "#ffd119");
+
+svg.append("rect")
+.attr("x", 785).attr("y", 375)
+.attr("height", 20).attr("width", 150).attr("rx", 30).attr("ry", 30)
+.style("fill", "url(#grad)");
+
+svg.append("text").attr("y", 600).attr("x", 480).text("Mormon x Married 14-24").style("font-size", 38);
+
+</script>
+
+
+<script>
+//new script for the mormon map
+var width = 960,
+    height = 625;
+
+var projection2 = d3.geo.albersUsa()
+.scale(550)
+.translate([255,150]);
+
+var path2 = d3.geo.path().projection(projection2);
+	
+var svg2 = d3.select("#separate").append("svg")
+    .attr("width", width/2)
+    .attr("height", height/2);
+
+var svg3 = d3.select("#separate").append("svg")
+    .attr("width", width/2)
+    .attr("height", height/2);
+    
+var counties, states;
+
+var usdaAtlas;
+
+var digitScale = d3.scale.category10();
+
+d3.json("us.json", function(error, shapes) {
+	states = topojson.feature(shapes, shapes.objects.states).features;
+	//console.log(states);
+	
+	var marriedPaths = svg2.append("g").attr("id", "g2");
+	marriedPaths.selectAll("path").data(states).enter()
+	.append("path")
+	.attr("d", path2)
+	.style("fill", "none").style("stroke", "#000")
+	.attr("id", function(state) {
+			return "s" + state.id;
+		});
+	
+	d3.csv("data.csv", function (error, rows) {
+		
+		if (error) {console.log(error);}
+		
+		usdaAtlas = d3.map(rows, function (state) { return state.id; });
+		//console.log(rows[0]);
+		
+		marriedPaths.selectAll("path")
+		.style("fill", function(state) {
+			//console.log(state.id);
+			var stateData = usdaAtlas.get(state.id);
+			
+			//console.log(stateData.Protestant);
+			
+			if (!stateData) {
+				return "#222aaa";
+			}
+			//console.log(stateData.married15);
+			
+			return mar15Scale(stateData.married15);
+		});
+	});
+	
+	//for the religion part
+	var statePaths = svg3.append("g").attr("id","g3");
+	
+	statePaths.selectAll("path").data(states).enter()
+	.append("path")
+	.attr("d", path2)
+	.style("fill", "none").style("stroke", "#000")
+	.attr("id", function(state) {
+			return "s" + state.id;
+		});
+	
+	d3.csv("data.csv", function (error, rows) {
+		
+		if (error) {console.log(error);}
+		
+		usdaAtlas = d3.map(rows, function (state) { return state.id; });
+		//console.log(rows[0]);
+		
+		statePaths.selectAll("path")
+		.style("fill", function(state) {
+			//console.log(state.id);
+			var stateData = usdaAtlas.get(state.id);
+			
+			//console.log(stateData.Protestant);
+			
+			if (!stateData) {
+				return "#222aaa";
+			}
+			//console.log(stateData.Mormon);
+			
+			//there are several religions that can be used here:
+			/*Hindu, Buddhist, Christian, Orthodox, Mormon, Muslim, Jewish, RomanCatholic, Protestant, Atheist, (Nothing in particular + Agnostic = AgNot)*/
+			
+			return mormonScale(stateData.Mormon);
+		});
+	});
+});
+
+//set up the color key
+var gradient2 = svg2.append("defs").append("linearGradient").attr("id", "grad2");
+gradient2.append("stop").attr("offset", "0%").attr("stop-color", "#fff");
+gradient2.append("stop").attr("offset", "100%").attr("stop-color", "#ffff00");
+
+var gradient3 = svg2.append("defs").append("linearGradient").attr("id", "grad3");
+gradient3.append("stop").attr("offset", "0%").attr("stop-color", "#fff");
+gradient3.append("stop").attr("offset", "100%").attr("stop-color", "#000cff");
+
+
+svg2.append("rect")
+.attr("x", 280).attr("y", 270)
+.attr("height", 10).attr("width", 75).attr("rx", 15).attr("ry", 15)
+.style("fill", "url(#grad2)");
+svg2.append("text").attr("x",250).attr("y", 22).text("Mormon");
+
+svg3.append("rect")
+.attr("x", 280).attr("y", 270)
+.attr("height", 10).attr("width", 75).attr("rx", 15).attr("ry", 15)
+.style("fill", "url(#grad3)");
+svg3.append("text").attr("x",250).attr("y", 22).text("Married 14-24");
+
+//svg.append("text").attr("y", 600).attr("x", 480).text("Protestant %'s").style("font-size", 38);
+
+</script>
+
+</body>
+</html>
